@@ -1373,7 +1373,7 @@ new->enttity classes from db(entity)
 new->JSF cdi bean(Controller)
 new->others->service->Rest full web services from pattern(rest)
 new->others->services->Restfull Java Client(client)
-
+/faces/EmpRest/index.xhtml
 
 
 folder structure
