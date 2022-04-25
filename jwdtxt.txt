@@ -4945,6 +4945,755 @@ public void getMessage() {
 }
 =============================================end msg queue================================
 
+==============================Start jaas=========================
+As the first step, We need to create a login module class which implements javax.security.auth.spi.LoginModule interface. This interface exposes 5 methods that must be implemented by our login module class. Those are initialize(), login(), commit(), abort(), logout().
+initialize() method is passed four arguments .
+The ‘Subject’ is what, We need to authenticate. The subject can represents the related information for a single login user. It can represent identities like ‘username’, ‘password’ etc. And also, it can represents the roles assigned to the user. All these identities should be represent as java.security.Principal. So We should create separate classes to distinguish these entities by implementing java.security.Principal. In my tutorial, I have created separate classes for username, password and role as JAASUserPrincipal, JAASPasswordPrincipal and JAASRolePrincipal. Subject’s getPrincipals() method returns a set of java.security.Principal associated with the subject. To distinguish these, it is important of Creating separate classes for each identity.
+The ‘ CallbackHandler‘ is used to communicate with the user. When authenticating the user by the login module, the login module invokes the handle() method of the CallbackHandler instance to get the user name and password. We do not want to worry about CallbackHandler instance yet. Because the container manages to provide the required callbakcs. The tomcat provides JAASCallbackHandler for this purpose. But, If We want to invoke the authentication explicitly, We need to create our own call back handler class by implementing the javax.security.auth.callback.CallbackHandler. I will explain this at the end of the tutorial.
+The next important argument for initialize() method is ‘options’. These options where We declare those in ‘ jass.config‘ file. With the initialisation of login module, map of options declared in ‘jass.config’ file are provided. I will explain the ‘jaas.config’ file of our tutorial later.
+Next, I will show the full source code for our principal classes.
+JAASUserPrincipal.java
+
+package com.rainyday.server.login;
+ 
+ import java.io.Serializable;
+ import java.security.Principal;
+ 
+/**
+ * @author semika
+ *
+ */
+ public class JAASUserPrincipal implements Principal, Serializable {
+ 
+ private String name;
+  
+ /**
+  * @param name
+  */
+ public JAASUserPrincipal(String name) {
+   
+ if (name == null) {
+     throw new NullPointerException("NULL user name");
+ }
+     this.name = name;
+ }
+  
+ @Override
+ public String getName() {
+     return name;
+ }
+ 
+ @Override
+ public String toString() {
+     return "UserPrincipal [name=" + name + "]";
+ }
+ 
+ @Override
+ public int hashCode() {
+     final int prime = 31;
+     int result = 1;
+     result = prime * result + ((name == null) ? 0 : name.hashCode());
+     return result;
+ }
+ 
+ @Override
+ public boolean equals(Object obj) {
+     if (this == obj)
+        return true;
+     if (obj == null)
+        return false;
+     if (getClass() != obj.getClass())
+        return false;
+     JAASUserPrincipal other = (JAASUserPrincipal) obj;
+     if (name == null) {
+        if (other.name != null)
+           return false;
+     } else if (!name.equals(other.name))
+        return false;
+   
+     return true;
+ }
+}
+JAASRolePrincipal.java
+
+01
+02
+03
+04
+05
+06
+07
+08
+09
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+package com.rainyday.server.login;
+ 
+ import java.io.Serializable;
+ import java.security.Principal;
+ 
+/**
+ * @author semika
+ *
+ */
+ public class JAASRolePrincipal implements Principal, Serializable {
+ 
+ private String name;
+  
+ /**
+  * @param name
+  */
+ public JAASRolePrincipal(String name) {
+     if (name == null) {
+        throw new NullPointerException("NULL role name");
+     }
+     this.name = name;
+ }
+ 
+ @Override
+ public String getName() {
+    return name;
+ }
+ 
+ @Override
+ public String toString() {
+     return "JASSRolePrincipal [name=" + name + "]";
+ }
+ 
+ @Override
+ public int hashCode() {
+     final int prime = 31;
+     int result = 1;
+     result = prime * result + ((name == null) ? 0 : name.hashCode());
+     return result;
+ }
+ 
+ @Override
+ public boolean equals(Object obj) {
+     if (this == obj)
+        return true;
+     if (obj == null)
+        return false;
+     if (getClass() != obj.getClass())
+        return false;
+     JAASRolePrincipal other = (JAASRolePrincipal) obj;
+     if (name == null) {
+        if (other.name != null)
+           return false;
+     } else if (!name.equals(other.name))
+        return false;
+      
+     return true;
+ }
+}
+JAASPasswordPrincipal.java
+
+01
+02
+03
+04
+05
+06
+07
+08
+09
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+package com.rainyday.server.login;
+ 
+ import java.io.Serializable;
+ import java.security.Principal;
+ 
+/**
+ * @author semika
+ *
+ */
+ public class JAASPasswordPrincipal implements Principal, Serializable {
+ 
+ private String name;
+  
+ /**
+  * @param name
+  */
+ public JAASPasswordPrincipal(String name) {
+     if (name == null) {
+        throw new NullPointerException("NULL password.");
+     }
+     this.name = name;
+ }
+ 
+ @Override
+ public String getName() {
+     return name;
+ }
+ 
+ @Override
+ public int hashCode() {
+     final int prime = 31;
+     int result = 1;
+     result = prime * result + ((name == null) ? 0 : name.hashCode());
+     return result;
+ }
+ 
+ @Override
+ public boolean equals(Object obj) {
+     if (this == obj)
+         return true;
+     if (obj == null)
+         return false;
+     if (getClass() != obj.getClass())
+         return false;
+     JAASPasswordPrincipal other = (JAASPasswordPrincipal) obj;
+     if (name == null) {
+        if (other.name != null)
+           return false;
+     } else if (!name.equals(other.name))
+        return false;
+      
+     return true;
+ }
+ 
+ @Override
+ public String toString() {
+     return "JAASPasswordPrincipal [name=" + name + "]";
+ }
+ 
+}
+The above three classes are exactly similar. But, We need to create separate classes for each principal to distinguish them.
+The login() method of login module performs the authentication. This validates the user entered user name and password with the database. Now, You may have a problem, How login details entered by the user comes into the login() method. As I explained earlier, the call back handler brings the login identities into the login() method. From the login() method, the login module invokes the handle() method of call back handler by passing the required call backs into it. Then handle() method populates those call backs with the required information and make available to login() method.
+The commit() method is invoked by the login module after the successful authentication. The subject can be populated with associated principals. For example, We can retrieve user assigned roles from the database and attached those to the subject.
+The next, I will explain the required configurations to work this login module.
+We should create ‘jass.config’ file and should be placed that file under ‘$CATALINA_HOME/conf‘.
+The ‘jass.config’ file of this tutorial is as follows.
+
+rainyDay {
+   com.rainyday.server.login.JAASLoginModule required
+   dbDriver="com.mysql.jdbc.Driver"
+   dbURL="jdbc:mysql://localhost/rainyday"
+   dbUser="root"
+   dbPassword="abc123"
+   userQuery="select username from secu_user where secu_user.username=? and secu_user.password=?"
+   roleQuery="select secu_user_role.rolename from secu_user, secu_user_role "
+             + "where secu_user.username=secu_user_role.username and secu_user.username=?"
+   debug=true;
+};
+‘jass.config’ file should have this similar format. In addition to the login module declaration, You can declare options as your wish. These options are made available by login module with ‘options’ map in initialize() method argument.
+
+Additionally, We should tell the tomcat, Where to locate the ‘jaas.config’ file by adding it’s path to JAVA_OPTS environment variable. I have added this into ‘catalina.sh’ file under $CATALINA_HOME/bin as follows.
+
+JAVA_OPTS=”$JAVA_OPTS -Djava.security.auth.login.config==../conf/jaas.config”
+
+Next, You need to declare the JAASRealm configurations. You can add a new ‘Realm’ entry into the server.xml file under $CATALINA_HOME/conf. In our tutorial, the ‘Realm’ entry is as follows.                  
+
+1
+2
+3
+4
+<Realm className="org.apache.catalina.realm.JAASRealm"
+ appName="rainyDay"
+ userClassNames="com.rainyday.server.login.JASSUserPrincipal,com.rainyday.server.login.JAASPasswordPrincipal"
+ roleClassNames="com.rainyday.server.login.JASSRolePrincipal"/>
+For apache tomcat’s realm configuration, You can view this documentation. The complete source code for our jaas login module.
+
+JAASLoginModule.java
+
+
+package com.rainyday.server.login;
+ 
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+ 
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+ 
+import org.apache.log4j.Logger;
+ 
+/**
+ * @author semika
+ *
+ */
+public class JAASLoginModule implements LoginModule { 
+  
+    private static Logger LOGGER = Logger.getLogger(JAASLoginModule.class); 
+  
+    // initial state
+    private Subject subject;
+    private CallbackHandler callbackHandler;
+    private Map sharedState;
+    private Map options;
+ 
+    // configurable option
+    private boolean debug = false;
+     
+    // the authentication status
+    private boolean succeeded = false;
+    private boolean commitSucceeded = false;
+     
+    //user credentials
+    private String username = null;
+    private char[] password = null;
+     
+    //user principle
+    private JAASUserPrincipal userPrincipal = null;
+    private JAASPasswordPrincipal passwordPrincipal = null;
+     
+    public JAASLoginModule() {
+         super();
+    }
+ 
+    @Override
+    public void initialize(Subject subject, CallbackHandler callbackHandler,
+                Map<string, ?=""> sharedState, Map<string, ?=""> options) {
+        this.subject = subject;
+        this.callbackHandler = callbackHandler;
+        this.sharedState = sharedState;
+        this.options = options;
+   
+        debug = "true".equalsIgnoreCase((String)options.get("debug")); 
+    }
+ 
+    @Override
+    public boolean login() throws LoginException {
+   
+        if (callbackHandler == null){
+            throw new LoginException("Error: no CallbackHandler available " +
+            "to garner authentication information from the user");
+        }
+        Callback[] callbacks = new Callback[2];
+        callbacks[0] = new NameCallback("username");
+        callbacks[1] = new PasswordCallback("password: ", false);
+   
+        try {
+    
+            callbackHandler.handle(callbacks);
+            username = ((NameCallback)callbacks[0]).getName();
+            password = ((PasswordCallback)callbacks[1]).getPassword();
+    
+            if (debug) {
+                LOGGER.debug("Username :" + username);
+                LOGGER.debug("Password : " + password);
+            }
+    
+            if (username == null || password == null) {
+                LOGGER.error("Callback handler does not return login data properly");
+                throw new LoginException("Callback handler does not return login data properly"); 
+            }
+    
+            if (isValidUser()) { //validate user.
+                succeeded = true;
+                return true;
+            } 
+    
+        } catch (IOException e) { 
+             e.printStackTrace();
+        } catch (UnsupportedCallbackException e) {
+             e.printStackTrace();
+        }
+   
+        return false;
+    }
+ 
+    @Override
+    public boolean commit() throws LoginException {
+        if (succeeded == false) {
+            return false;
+        } else { 
+            userPrincipal = new JAASUserPrincipal(username);
+            if (!subject.getPrincipals().contains(userPrincipal)) {
+                subject.getPrincipals().add(userPrincipal);
+                LOGGER.debug("User principal added:" + userPrincipal);
+            }
+            passwordPrincipal = new JAASPasswordPrincipal(new String(password)); 
+            if (!subject.getPrincipals().contains(passwordPrincipal)) {
+                subject.getPrincipals().add(passwordPrincipal);
+                LOGGER.debug("Password principal added: " + passwordPrincipal);
+            }
+       
+            //populate subject with roles.
+            List<string> roles = getRoles();
+            for (String role: roles) {
+                JAASRolePrincipal rolePrincipal = new JAASRolePrincipal(role);
+                if (!subject.getPrincipals().contains(rolePrincipal)) {
+                    subject.getPrincipals().add(rolePrincipal); 
+                    LOGGER.debug("Role principal added: " + rolePrincipal);
+                }
+            }
+       
+            commitSucceeded = true;
+       
+            LOGGER.info("Login subject were successfully populated with principals and roles"); 
+       
+            return true;
+       }
+   }
+ 
+   @Override
+   public boolean abort() throws LoginException {
+      if (succeeded == false) {
+          return false;
+      } else if (succeeded == true && commitSucceeded == false) {
+          succeeded = false;
+          username = null;
+          if (password != null) {
+              password = null;
+          }
+          userPrincipal = null;    
+      } else {
+          logout();
+      }
+      return true;
+   }
+ 
+    @Override
+    public boolean logout() throws LoginException {
+        subject.getPrincipals().remove(userPrincipal);
+        succeeded = false;
+        succeeded = commitSucceeded;
+        username = null;
+        if (password != null) {
+            for (int i = 0; i < password.length; i++){
+                password[i] = ' ';
+                password = null;
+            }
+        }
+        userPrincipal = null;
+        return true;
+   }
+  
+   private boolean isValidUser() throws LoginException {
+ 
+      String sql = (String)options.get("userQuery");
+      Connection con = null;
+      ResultSet rs = null;
+      PreparedStatement stmt = null;
+   
+      try {
+          con = getConnection();
+          stmt = con.prepareStatement(sql);
+          stmt.setString(1, username);
+          stmt.setString(2, new String(password));
+    
+          rs = stmt.executeQuery();
+    
+          if (rs.next()) { //User exist with the given user name and password.
+              return true;
+          }
+       } catch (Exception e) {
+           LOGGER.error("Error when loading user from the database " + e);
+           e.printStackTrace();
+       } finally {
+           try {
+               rs.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing result set." + e);
+           }
+           try {
+               stmt.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing statement." + e);
+           }
+           try {
+               con.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing connection." + e);
+           }
+       }
+       return false;
+   }
+ 
+ /**
+  * Returns list of roles assigned to authenticated user.
+  * @return
+  */
+  private List<string> getRoles() { 
+   
+      Connection con = null;
+      ResultSet rs = null;
+      PreparedStatement stmt = null;
+   
+      List<string> roleList = new ArrayList<string>(); 
+   
+      try {
+          con = getConnection();
+          String sql = (String)options.get("roleQuery");
+          stmt = con.prepareStatement(sql);
+          stmt.setString(1, username);
+    
+          rs = stmt.executeQuery();
+    
+          if (rs.next()) { 
+              roleList.add(rs.getString("rolename")); 
+          }
+      } catch (Exception e) {
+          LOGGER.error("Error when loading user from the database " + e);
+          e.printStackTrace();
+      } finally {
+           try {
+               rs.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing result set." + e);
+           }
+           try {
+               stmt.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing statement." + e);
+           }
+           try {
+               con.close();
+           } catch (SQLException e) {
+               LOGGER.error("Error when closing connection." + e);
+           }
+       }
+       return roleList;
+ }
+  
+ /**
+  * Returns JDBC connection
+  * @return
+  * @throws LoginException
+  */
+  private Connection getConnection() throws LoginException {
+   
+      String dBUser = (String)options.get("dbUser");
+      String dBPassword = (String)options.get("dbPassword");
+      String dBUrl = (String)options.get("dbURL");
+      String dBDriver = (String)options.get("dbDriver");
+ 
+      Connection con = null;
+      try {
+         //loading driver
+         Class.forName (dBDriver).newInstance();
+         con = DriverManager.getConnection (dBUrl, dBUser, dBPassword);
+      } 
+      catch (Exception e) {
+         LOGGER.error("Error when creating database connection" + e);
+         e.printStackTrace();
+      } finally {
+      }
+      return con;
+   }
+}
+The abort() method of the login module will be invoked if something went wrong within the login() or commit() method execution. In this kind of situation, We can not say that the authentication process was successfully completed and the required clean up operations can be done within the abort() method, if the authentication process encountered a failure.
+We can utilise the ‘options’ map which was initialise within the initialize() method of the login module to get the configuration information declared within the ‘jass.config’ file. You can come up with a good technique to get JDBC connection object. I did not concentrate on that with in this tutorial and only wanted to show you the mechanism, How the things should be done.
+By now, We have completed the thing which are required for basic JAAS authentication module. Next, We should configure our security constraints in web.xml file.
+
+<login-config>
+     <auth-method>FORM</auth-method>
+     <realm-name>rainyDay</realm-name>
+     <form-login-config>
+          <form-login-page>/login.jsp</form-login-page>
+          <form-error-page>/error.jsp</form-error-page>
+     </form-login-config>
+</login-config>
+<security-role>
+    <role-name>*</role-name>
+</security-role>
+<security-constraint>
+    <web-resource-collection>
+         <web-resource-name>Rainy day</web-resource-name>
+         <url-pattern>/</url-pattern>
+         <http-method>POST</http-method>
+         <http-method>GET</http-method>
+    </web-resource-collection>
+    <auth-constraint>
+         <role-name>*</role-name>
+    </auth-constraint>
+</security-constraint>
+With the above security constraints, if some request comes to a particular resource in the protected area of the application with out the authentication, the request will be redirected to the ‘login’ page. Next, I will show you the simple HTML form which invokes our login module with the submission of the form.
+
+1
+2
+3
+4
+5
+<form id="loginForm" name="loginForm" method="post" action="j_security_check">
+       User Name : <input id="username" type="text" name="j_username" class="textbox"></input>
+       Password : <input id="password" type="password" name="j_password" class="textbox"></input>
+       <input name="login" type="submit" value="LOGIN" id="submit" class="button blue">
+</form>
+So, We are done with that.This is very basic implementation of JAAS. The advantage of this kind of JAAS module is, We can switch to a different login module implementation just with a single configuration change and without doing any modification to our existing code. And also this is container independent. If You want to deploy this with jBoss server, instead of ‘jass.config’, You can use ‘login-config.xml’ file in jboss conf folder. As I promised you to explain, How to invoke this kind of login module explicitly, here it is. There are some circumstances, We need to authenticate a particular user with pragmatically, but still We should use our implemented login module. In this kind of situation, the big problem is providing user identities (user name, password etc) to the our login module. In the above case, We used a ‘CallbackHandler’ class which is ‘JAASCallbackHander’ provided by apache catalina. But, Here We can not use and We have to implement our own call back handler class.
+JAASCallbackHandler.java
+
+
+package com.rainyday.server.login;
+ 
+import java.io.IOException;
+ 
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+ 
+import org.apache.log4j.Logger;
+ 
+/**
+ * @author semika
+ *
+ */
+ public class JAASCallbackHandler implements CallbackHandler {
+ 
+ private static final Logger LOGGER = Logger.getLogger(JAASCallbackHandler.class);
+  
+ private String username = null;
+ private String password = null;
+  
+ /**
+  * @param username
+  * @param password
+  */
+ public JAASCallbackHandler(String username, String password) {
+     this.username = username;
+     this.password = password;
+ }
+ 
+ 
+ @Override
+ public void handle(Callback[] callbacks) throws IOException,
+   UnsupportedCallbackException {
+   
+     LOGGER.info("Callback Handler invoked ");
+   
+     for (int i = 0; i < callbacks.length; i++) {
+        if (callbacks[i] instanceof NameCallback) {
+           NameCallback nameCallback = (NameCallback) callbacks[i];
+           nameCallback.setName(username);
+        } else if (callbacks[i] instanceof PasswordCallback) {
+           PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+           passwordCallback.setPassword(password.toCharArray());
+        } else {
+           throw new UnsupportedCallbackException(callbacks[i], "The submitted Callback is unsupported");
+        }
+     }
+ }
+}
+Next, We have to create an instance of ‘ LoginContext’ to invoke the authentication explicitly.
+
+LoginContext lc = null;
+try {
+    lc = new LoginContext("rainyDay", new JAASCallbackHandler(username, password));
+    lc.login();
+    //get the subject.
+    Subject subject = lc.getSubject();
+    //get principals
+    subject.getPrincipals();
+    LOGGER.info("established new logincontext");
+} catch (LoginException e) {
+    LOGGER.error("Authentication failed " + e);
+} 
+If We end up with the execution of above code without any exception, that implies the authentication was succeeded. If an exception was encountered, authentication has failed.
+That’s all from this tutorials. http://docs.oracle.com/javaee/1.4/tutorial/doc/Security5.html was a good tutorial for me to understand login authentication.
+===============================End jaas============================
 ==============================================Start rrrrrr====================================
 =====================================================================================================================================
   password
