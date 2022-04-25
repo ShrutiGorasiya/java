@@ -4873,7 +4873,77 @@ public class clientController implements Serializable {
 
 ===============================End oldtxt=======================
 
+=============================================start msg queue===============================
+The websimplemessage Facelets Pages
+The Facelets pages for the example are as follows.
 
+sender.xhtml, which provides a labeled h:InputText tag where the user enters the message, along with two command buttons. When the user clicks the Send Message button, the senderBean.sendMessage method is called to send the message to the queue and display its contents. When the user clicks the Go to Receive Page button, the receiver.xhtml page appears.
+
+receiver.xhtml, which also provides two command buttons. When the user clicks the Receive Message button, the receiverBean.getMessage method is called to fetch the message from the queue and display its contents. When the user clicks the Send Another Message button, the sender.xhtml page appears again.
+
+
+The websimplemessage Managed Beans
+The two managed beans for the example are as follows.
+
+SenderBean.java, a CDI managed bean with one property, messageText, and one business method, sendMessage. The class is annotated with @JMSDestinationDefinition to create a component-private queue:
+
+@JMSDestinationDefinition(
+        name = "java:comp/jms/webappQueue",
+        interfaceName = "javax.jms.Queue",
+        destinationName = "PhysicalWebappQueue")
+@Named
+@RequestScoped
+public class SenderBean {
+The sendMessage method injects a JMSContext (using the default connection factory) and the queue, creates a producer, sends the message the user typed on the Facelets page, and creates a FacesMessage to display on the Facelets page:
+
+@Inject
+private JMSContext context;
+@Resource(lookup = "java:comp/jms/webappQueue")
+private Queue queue;
+private String messageText;
+...
+public void sendMessage() {
+    try {
+        String text = "Message from producer: " + messageText;
+        context.createProducer().send(queue, text);
+
+        FacesMessage facesMessage =
+                new FacesMessage("Sent message: " + text);
+        FacesContext.getCurrentInstance().addMessage(null, facesMessage);
+    } catch (Throwable t) {
+        logger.log(Level.SEVERE,
+                "SenderBean.sendMessage: Exception: {0}",
+                t.toString());
+    }
+}
+ReceiverBean.java, a CDI managed bean with one business method, getMessage. The method injects a JMSContext (using the default connection factory) and the queue that was defined in SenderBean, creates a consumer, receives the message, and creates a FacesMessage to display on the Facelets page:
+
+@Inject
+private JMSContext context;
+@Resource(lookup = "java:comp/jms/webappQueue")
+private Queue queue;
+...
+public void getMessage() {
+    try {
+        JMSConsumer receiver = context.createConsumer(queue);
+        String text = receiver.receiveBody(String.class);
+
+        if (text != null) {
+            FacesMessage facesMessage =
+                    new FacesMessage("Reading message: " + text);
+            FacesContext.getCurrentInstance().addMessage(null, facesMessage);
+        } else {
+            FacesMessage facesMessage =
+                    new FacesMessage("No message received after 1 second");
+            FacesContext.getCurrentInstance().addMessage(null, facesMessage);
+        }
+    } catch (Throwable t) {
+        logger.log(Level.SEVERE,
+                "ReceiverBean.getMessage: Exception: {0}",
+                t.toString());
+    }
+}
+=============================================end msg queue================================
 
 ==============================================Start rrrrrr====================================
 =====================================================================================================================================
