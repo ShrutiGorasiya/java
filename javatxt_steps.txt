@@ -1,0 +1,1116 @@
+java not found
+envirment variable path ane envirment variable add krvanu
+system variable
+JAVA_HOME c:\Program Files\Java\jdk-11.0.7
+path->click -> c:\Program Files\Java\jdk-11.007
+
+
+
+
+persistance : 
+project->rightclick->propertice->
+run
+->
+server -> payara ->ok
+
+==============================================================================
+Database -> new connection->MYSQL(Connector/J driver)->next.....
+
+DB conection
+
+JDBC
+===========================
+..JDBC Connection pool
+ProductgenericResource
+productgeneric
+
+===========================
+new -> poolname ->res type -> javax.sql.datasource -> vender->Mysql
+datasource class name=com.mysql.cj.jdbc.MysqlDataSource(if it shows error than only add)
+Properties
+
+password->shruti
+url ->jdbc:mysql://localhost:3306/ejdatabase?useSSL=false
+URL ->jdbc:mysql://localhost:3306/ejdatabase?useSSL=false
+serverName ->localhost
+driver ->com.mysql.jdbc.Driver
+user ->root
+driverClass ->com.mysql.jdbc.Driver
+port ->3306
+
+
+finish->ping
+
+=======================================================
+
+
+===========================
+..JDBC Resources
+===========================
+
+new -> JNDI name:jdbc/itpool
+Poolname -> select pool name
+ok
+
+
+==============================================================================
+
+ 
+jdbc:mysql://localhost:3306/doctor_appointment?useSSL=false
+
+steps:
+
+----first add jwtenizr,mysql-connector-java-5.0.8-bin,payara-micro-5.2022.2 into your folder
+----open terminal go to your folder
+----Hello,
+Having some STEPs you can follow, that will guide you to create and run 2 microservices application with mysql database integrated. 
+You Need 4 files Initially
+	payara-micro-5.2022.2.jar
+	mysql-connector-java-5.1.47-bin.jar
+	jwtenizr.jar
+	domain.xml
+
+Setup for JWT using jwtenizr.jar
+1.	Run the following command to execute jar file:
+       java -jar jwtenizr.jar
+-------------------------------------------------
+2.	Update “jwt-token.json” file as per need (Only highlighted values can be changed):
+        Eg. {"iss":"airhacks","jti":"42","sub":"msa","upn":"msa","groups":["Patient","User"]}
+-------------------------------------------------
+3.	Run step 1 again, so it will update the token which is stored in the file “token.jwt”
+-------------------------------------------------
+4.	Create New Project (MSAApp) 
+a.	-> Java with maven 
+i.	-> project from Archetype
+1.	Select : jakartaee8-payara-microprofile-archetype
+
+-------------------------------------------------
+5.	Do changes in pom.xml
+            <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <version>3.2</version>
+            <type>pom</type>
+            <scope>provided</scope>
+            </dependency>
+            <maven.compiler.source>1.8</maven.compiler.source>
+            <maven.compiler.target>1.8</maven.compiler.target>
+-------------------------------------------------
+6.	Create persistence unit
+        ...datasource=jdbc/testpool
+        ...select none radio button
+ -------------------------------------------------
+7.	Create Entity Classes from database. (Model)
+        ==================================================================================================================================================================
+        ==================================================================================================================================================================
+-------------------------------------------------
+8.	Create class for business logic with entityManager. (Beans) javaclass name=Doc
+         create Consturctor
+         Change Pu name:em = Persistence.createEntityManagerFactory("com.mycompany_DocAvailabilityApp_war_1.0-SNAPSHOTPU").createEntityManager();
+         create getter setter
+         add your logical method
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+-------------------------------------------------
+9.	Make Changes in Example Service means Add your rest resources in that file.
+        ex:@Path("/doctor_avalilability/{specialization}")
+           @Inject Doc docService;
+       	@RolesAllowed("Patient")
+           Add Logical method here which we define in doc
+
+-------------------------------------------------
+10.	Add 2 lines in “Bootstrap.java”
+	@LoginConfig(authMethod="MP-JWT")
+	@DeclareRoles({"User","Patient"})
+	@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+	@ApplicationPath("rest")
+	public class BootStrap extends javax.ws.rs.core.Application {
+	}
+-------------------------------------------------
+11.	Add Folder “META-INF” at location below:
+a.	Other Sources -> src/main/resources -> META-INF
+b.	Inside META-INF, create one properties file named “microprofile-config.properties”
+c.	Inside that file copy paste issuer and public key from “microprofile-config.properties” which is generated after executing jwt jar file.
+Now you MSAApp project is done.
+
+
+-------------------------------------------------
+1.  Create New Project (MSAClient) 
+d.	-> Java with maven 
+i.	-> project from Archetype
+Select : jakartaee8-payara-microprofile-archetype
+-------------------------------------------------
+2. Do changes in pom.xml
+              <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <version>3.2</version>
+            <type>pom</type>
+            <scope>provided</scope>
+</dependency>
+
+
+<maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+-------------------------------------------------
+3. Copy Paste Model file (entity classes) from your “MSAApp” Project 
+-------------------------------------------------
+4. Just create Client Interface (client -> MSAClient)
+-------------------------------------------------
+5. Now create Servlet (client -> TestClientServlet)
+-------------------------------------------------
+6. SAME way as we done in “MSAApp”, create properties file inside META-INF 
+	And you need to mention rest url for connecting to “MSAApp” 
+        
+	And copy paste jwt-token value from generated “token.jwt” file.
+       (Remember port name and use it for deploying MSAApp using payara micro)
+
+Now you MSAClient project is done.
+-------------------------------------------------
+7. Do Changes in “domain.xml” file (eg. Db related username, password, port) (Mention your jndi pool name)
+
+Run both files using below 2 commands (Use 2 terminals)
+
+
+port 8085 -> MSAApp
+Port 8087 -> not mention in code but use it
+-------------------------------------------------
+a)	java -jar payara-micro-5.2022.2.jar –-deploy  MSAApp/artifact/MSAApp.war --port 8085 --addlibs mysql-connector-java-5.0.8-bin.jar --domainconfig domain.xml
+-------------------------------------------------
+b)	java -jar payara-micro-5.2022.2.jar –-deploy  MSAClient/artifact/MSAClient.war --port 8087 --addlibs mysql-connector-java-5.0.8-bin.jar --domainconfig domain.xml
+
+      Url for running MSAClient : http://localhost:8087/MSAClient/TestClientServlet
+http://localhost:8087/MSAClient/TestClientServlet
+
+=========================================Postman
+url = http://localhost:8085/MSAApp/rest/doctor_availability/Cardiologist
+into header section
+Key = Authorization
+Value = Bearer token(token.jwt)
+
+
+*****************************************************************************MSAApp**************************************************************
+
+=====================================================================
+entity
+=======================================================================
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package Model;
+
+import java.io.Serializable;
+import java.util.Date;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Lob;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+/**
+ *
+ * @author Admin
+ */
+@Entity
+@Table(name = "doctor_appointment")
+@NamedQueries({
+    @NamedQuery(name = "DoctorAppointment.findAllBySpecialization", query = "SELECT d FROM DoctorAppointment d WHERE d.specialization=:specialization"),
+    @NamedQuery(name = "DoctorAppointment.findByDocId", query = "SELECT d FROM DoctorAppointment d WHERE d.docId = :docId"),
+    @NamedQuery(name = "DoctorAppointment.findByDocName", query = "SELECT d FROM DoctorAppointment d WHERE d.docName = :docName"),
+    @NamedQuery(name = "DoctorAppointment.findBySpecialization", query = "SELECT d FROM DoctorAppointment d WHERE d.specialization = :specialization"),
+    @NamedQuery(name = "DoctorAppointment.findByFromTime", query = "SELECT d FROM DoctorAppointment d WHERE d.fromTime = :fromTime"),
+    @NamedQuery(name = "DoctorAppointment.findByToTime", query = "SELECT d FROM DoctorAppointment d WHERE d.toTime = :toTime")})
+public class DoctorAppointment implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Basic(optional = false)
+    @Column(name = "doc_id")
+    private Integer docId;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 20)
+    @Column(name = "doc_name")
+    private String docName;
+    @Basic(optional = false)
+    @NotNull
+    @Size(min = 1, max = 30)
+    @Column(name = "specialization")
+    private String specialization;
+    @Basic(optional = false)
+    @NotNull
+    @Lob
+    @Size(min = 1, max = 65535)
+    @Column(name = "address")
+    private String address;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "from_time")
+    @Temporal(TemporalType.TIME)
+    private Date fromTime;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "to_time")
+    @Temporal(TemporalType.TIME)
+    private Date toTime;
+
+    public DoctorAppointment() {
+    }
+
+    public DoctorAppointment(Integer docId) {
+        this.docId = docId;
+    }
+
+    public DoctorAppointment(Integer docId, String docName, String specialization, String address, Date fromTime, Date toTime) {
+        this.docId = docId;
+        this.docName = docName;
+        this.specialization = specialization;
+        this.address = address;
+        this.fromTime = fromTime;
+        this.toTime = toTime;
+    }
+
+    public Integer getDocId() {
+        return docId;
+    }
+
+    public void setDocId(Integer docId) {
+        this.docId = docId;
+    }
+
+    public String getDocName() {
+        return docName;
+    }
+
+    public void setDocName(String docName) {
+        this.docName = docName;
+    }
+
+    public String getSpecialization() {
+        return specialization;
+    }
+
+    public void setSpecialization(String specialization) {
+        this.specialization = specialization;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Date getFromTime() {
+        return fromTime;
+    }
+
+    public void setFromTime(Date fromTime) {
+        this.fromTime = fromTime;
+    }
+
+    public Date getToTime() {
+        return toTime;
+    }
+
+    public void setToTime(Date toTime) {
+        this.toTime = toTime;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (docId != null ? docId.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof DoctorAppointment)) {
+            return false;
+        }
+        DoctorAppointment other = (DoctorAppointment) object;
+        if ((this.docId == null && other.docId != null) || (this.docId != null && !this.docId.equals(other.docId))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Model.DoctorAppointment[ docId=" + docId + " ]";
+    }
+    
+}
+               
+
+=============================================================================================
+Beans (Doc.java)
+===============================================================================================
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/J2EE/EJB30/StatelessEjbClass.java to edit this template
+ */
+package Beans;
+
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Named;
+import javax.persistence.EntityManager;
+import javax.persistence.Persistence;
+
+/**
+ *
+ * @author kruti
+ */
+@Named
+@ApplicationScoped
+public class Doc {
+    
+    EntityManager em;
+    Collection<DoctorAppointment> doctorAppointment;
+
+    public Doc() {
+        em = Persistence.createEntityManagerFactory("com.mycompany_DocAvailabilityApp_war_1.0-SNAPSHOTPU").createEntityManager();
+    }
+
+    public EntityManager getEm() {
+        return em;
+    }
+
+    public void setEm(EntityManager em) {
+        this.em = em;
+    }
+
+    public Collection<DoctorAppointment> getDoctorAppointment() {
+        return doctorAppointment;
+    }
+
+    public void setDoctorAppointment(Collection<DoctorAppointment> doctorAppointment) {
+        this.doctorAppointment = doctorAppointment;
+    }
+    
+    public Collection<DoctorAppointment> getDoctorAvailability(String Specialization){
+        doctorAppointment=(Collection<DoctorAppointment>)em.createNamedQuery("DoctorAppointment.findAllBySpecialization").setParameter("specialization",Specialization ).getResultList();
+        return doctorAppointment;
+    }
+    
+    // Add business logic below. (Right-click in editor and choose
+    // "Insert Code > Add Business Method")
+}
+
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+ExampleService.java(MSAApp)
+package com.mycompany.docavailabilityapp.service;
+
+import Beans.Doc;
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path("/doctor_avalilability/{specialization}")
+//@Path("/example")
+public class ExampleService {
+    
+    @Inject Doc docService;
+    
+    @RolesAllowed("Patient")
+    //@Path("/doctor_avalilability/{specialization}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<DoctorAppointment> getDoctorAvailability(@PathParam("specialization") String Specialization){
+        return docService.getDoctorAvailability(Specialization);
+    }
+
+//    @GET
+//    //@Produces(MediaType.APPLICATION_JSON)
+//    public String get(){
+//        return "Hello world";
+//    }
+}
+
+
+ 
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+BootStrap.java(MSAApp)
+
+package com.mycompany.docavailabilityapp.config;
+import javax.annotation.security.DeclareRoles;
+import javax.ws.rs.ApplicationPath;
+import org.eclipse.microprofile.auth.LoginConfig;
+
+@LoginConfig(authMethod="MP-JWT")
+@DeclareRoles({"User","Patient"})
+@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+@ApplicationPath("rest")
+public class BootStrap extends javax.ws.rs.core.Application {
+}
+
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+microprofile.config(MSAApp)
+
+mp.jwt.verify.issuer=airhacks
+mp.jwt.verify.publickey=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt+oXGa1mlxXS7Fsfx7hFvmz+uwERlOYTu0kVoLjH/rC1v4OsICdIAjCUh4XgLUNX7C+TK6GBKWS7xIPWabC+jcxLdUEj1XRJrTqtQvC1AUaowXCeI16IZycYvU0de3+alBtE3mcF9GKKBiHCmj/7pW0mDwCPky2a0wkW3xWzMb46Q9wsjdZAdzbqDTzJheyC19H/kY6+AAPgGo0Ov6gGMzKWuVEmQQ3yZyAw3Wx+d/osE3xV1kxCL0isV7jLX1kZCaCGIUWmaGM7H4O68PGHP39DKOw3PyvWTgKZQEua0EZvdAvCYchC/KT3S0MuiZJIpfU+RAyzvrZiqjs+sK6VRwIDAQAB
+
+# Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+# Click nbfs://nbhost/SystemFileSystem/Templates/Other/properties.properties to edit this template
+
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+*****************************************************************************MSAClient**************************************************************
+MSAClient->interface ->under client package
+
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
+ */
+package client;
+
+import Model.DoctorAppointment;
+import java.util.Collection;
+import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+/**
+ *
+ * @author kruti
+ */
+@RegisterRestClient(configKey = "myclient")
+@ApplicationScoped
+ //@Named
+@Path("/doctor_avalilability/{specialization}")
+public interface MSAClient {
+    @GET
+    @ClientHeaderParam(name="authorization", value="{generateJWTToken}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Collection<DoctorAppointment> getDoctorAvailability(@PathParam("specialization") String Specialization);
+   
+    default String generateJWTToken()
+    {
+         Config config = ConfigProvider.getConfig();
+         String token ="Bearer "+config.getValue("jwt-string", String.class) ;
+         System.out.println("Token = "+token);
+         return token;
+    }
+}
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+TestServlet.java(MSAClient)
+
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
+ */
+package client;
+
+import Model.DoctorAppointment;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collection;
+import javax.inject.Inject;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+/**
+ *
+ * @author kruti
+ */
+@WebServlet(name = "TestClientServlet", urlPatterns = {"/TestClientServlet"})
+public class TestClientServlet extends HttpServlet {
+
+    @Inject @RestClient MSAClient msacl; 
+    Collection<DoctorAppointment> docApps;
+    
+    /**
+     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
+     * methods.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("text/html;charset=UTF-8");
+        try ( PrintWriter out = response.getWriter()) {
+            /* TODO output your page here. You may use following sample code. */
+            out.println("<!DOCTYPE html>");
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<title>Servlet TestClientServlet</title>");            
+            out.println("</head>");
+            out.println("<body>");
+            
+            try{
+                docApps=msacl.getDoctorAvailability("Cardiologist");
+            
+                out.println("<h1>Available Doctor's</h1><br/><br/><br/>");
+                out.println("<table><tr><td>DocName</td><td>Specialist</td><td>Address</td><td>FromTime</td><td>ToTime</td></tr>");
+                for(DoctorAppointment dapp:docApps){
+                    out.println("<tr><td>"+dapp.getDocName()+"</td><td>"+dapp.getSpecialization()+"</td><td>"+dapp.getAddress()+"</td><td>"+dapp.getFromTime()+"</td><td>"+dapp.getToTime()+"</td></tr>");
+                }
+                out.println("<table>");
+            }catch(Exception e){
+                out.println("Error Error Error");
+            }
+            
+            
+            out.println("</body>");
+            out.println("</html>");
+        }
+    }
+
+    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
+    /**
+     * Handles the HTTP <code>GET</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Handles the HTTP <code>POST</code> method.
+     *
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
+     */
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    /**
+     * Returns a short description of the servlet.
+     *
+     * @return a String containing servlet description
+     */
+    @Override
+    public String getServletInfo() {
+        return "Short description";
+    }// </editor-fold>
+
+}
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+microprofile-config(MSAClient)
+token = from token.jwt
+myclient/mp-rest/url=http://localhost:8085/DocAvailabilityApp/rest
+jwt-string = eyJraWQiOiJqd3Qua2V5IiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJtc2EiLCJ1cG4iOiJtc2EiLCJhdXRoX3RpbWUiOjE2NjMyNjg2MTUsImlzcyI6ImFpcmhhY2tzIiwiZ3JvdXBzIjpbIlBhdGllbnQiLCJVc2VyIl0sImV4cCI6MTY2MzM2ODYxNSwiaWF0IjoxNjYzMjY4NjE1LCJqdGkiOiI0MiJ9.IG3QoQibOKnPbEBs3EMgtGwdq9-m4mKFA0copuUbCQevRr-YtoPk55KdMHloBwPoeHzjdPo0GO4db_phlIN8rnqdR-odGPDopj7TESvTnguq5iwl5xNCrBfenbBNEhTIQDcNZvHdFgorUriPBNAEs6Ehov-hK7ju5EfSdKQ9CbXzJ1HXEayJhmjqFoTg3aj8EPEH9NtdmGe9I_rQ4UU7dB4XZZs8fuE4FQkN1j-yKaiL6yBIC07dMBx9gvl_y8_c0V8qFv5fZciOCp6HsVNL8516zyRK84i-oFSvmAnUDLk1y3OyaLIXPw4RQZDac0YeFy-u6o_vm3QcV8xRhBxwSw
+# Click nbfs://nbhost/SystemFileSystem/Templates/Other/properties.properties to edit this template
+
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+ExampleSevice.java(MSAClient)
+
+package com.mycompany.msaclient.service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
+
+@Path("/example")
+public class ExampleService {
+
+    @GET
+    public Response get() {
+        return Response.ok("Hello, world!").build();
+    }
+
+}
+
+
+ ==================================================================================================================================================================
+ ==================================================================================================================================================================
+
+BootStrap.java
+
+
+package com.mycompany.msaclient.config;
+import javax.ws.rs.ApplicationPath;
+
+@SuppressWarnings({"EmptyClass", "SuppressionAnnotation"})
+@ApplicationPath("rest")
+public class BootStrap extends javax.ws.rs.core.Application {
+}
+
+==================================================================
+changes in domain.xml
+
+<jdbc-connection-pool
+        datasource-classname="com.mysql.jdbc.jdbc2.optional.MysqlDataSource" name="testpool"
+        res-type="javax.sql.DataSource"
+        steady-pool-size="1"
+        is-connection-validation-required="true"
+        connection-validation-method="meta-data"
+        max-pool-size="10">
+    <property name="password" value="shruti"/>
+    <property name="user" value="root"/>
+    <property name="databaseName" value="doctor_appointment"/>
+    <property name="serverName" value="localhost"/>
+    <property name="portNumber" value="3306"/>
+    <property name="UseSSL" value="false"/>
+    <property name="zeroDateTimeBehavior" value="convertToNull"/>
+</jdbc-connection-pool>
+<jdbc-resource pool-name="testpool" jndi-name="jdbc/testpool"/>
+        <context-service description="context service" jndi-name="concurrent/__defaultContextService" object-type="system-all"></context-service>
+        <managed-executor-service maximum-pool-size="200" core-pool-size="0" long-running-tasks="true" keep-alive-seconds="300" hung-after-seconds="300" task-queue-capacity="2147483647" jndi-name="concurrent/__defaultManagedExecutorService" object-type="system-all"></managed-executor-service>
+        <managed-scheduled-executor-service core-pool-size="0" long-running-tasks="true" keep-alive-seconds="300" hung-after-seconds="300" jndi-name="concurrent/__defaultManagedScheduledExecutorService" object-type="system-all"></managed-scheduled-executor-service>
+        <managed-thread-factory description="thread factory" jndi-name="concurrent/__defaultManagedThreadFactory" object-type="system-all"></managed-thread-factory>
+    </resources>
+    <servers>
+        <server name="server" config-ref="server-config">
+            <resource-ref ref="jdbc/__default" />
+	    <resource-ref ref="jdbc/testpool" />
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+=========================================================Start CRUD With REST(sweta)=============================================
+------------------------------
+Cdi ben(Product.java)
+------------------------------
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package Controller;
+
+import javax.inject.Named;
+import javax.enterprise.context.ApplicationScoped;
+
+import client.ProductClient;
+import entity.Brandtb;
+import entity.Categorytb;
+import entity.Producttb;
+import java.util.Collection;
+import javax.annotation.PostConstruct;
+import javax.inject.Named;
+import javax.enterprise.context.ApplicationScoped;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
+
+/**
+ *
+ * @author De
+ */
+@Named(value = "product")
+@ApplicationScoped
+public class Product {
+
+    ProductClient productclient = new ProductClient();
+    private Response res;
+    private GenericType<Collection<Producttb>> productgeneric;
+    private GenericType<Collection<Categorytb>> categorygeneric;
+    private GenericType<Collection<Brandtb>> brandgeneric;
+    
+    Producttb producttb = new Producttb();
+    
+    private String pid,name,price,bid,cid;
+    Collection<Categorytb> categorylist;
+    Collection<Brandtb> brandlist;
+
+    public Producttb getProducttb() {
+        return producttb;
+    }
+
+    public void setProducttb(Producttb producttb) {
+        this.producttb = producttb;
+    }
+
+    
+    public String getPid() {
+        return pid;
+    }
+
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPrice() {
+        return price;
+    }
+
+    public void setPrice(String price) {
+        this.price = price;
+    }
+
+    public String getBid() {
+        return bid;
+    }
+
+    public void setBid(String bid) {
+        this.bid = bid;
+    }
+
+    public String getCid() {
+        return cid;
+    }
+
+    public void setCid(String cid) {
+        this.cid = cid;
+    }
+
+    public Collection<Categorytb> getCategorylist() {
+        return categorylist;
+    }
+
+    public void setCategorylist(Collection<Categorytb> categorylist) {
+        this.categorylist = categorylist;
+    }
+
+    public Collection<Brandtb> getBrandlist() {
+        return brandlist;
+    }
+
+    public void setBrandlist(Collection<Brandtb> brandlist) {
+        this.brandlist = brandlist;
+    }
+    
+    public Product() {
+    }
+    
+    @PostConstruct
+    public void init(){
+       categorygeneric = new GenericType<Collection<Categorytb>>(){};
+       res = productclient.getAllCategory(Response.class);
+       this.categorylist = res.readEntity(categorygeneric);
+       
+       brandgeneric = new GenericType<Collection<Brandtb>>(){};
+       res = productclient.getAllBrand(Response.class);
+       this.brandlist = res.readEntity(brandgeneric);
+    }
+    
+    public Collection<Producttb> findAll(){
+            productgeneric = new GenericType<Collection<Producttb>>(){};
+            res = productclient.getAllProducts(Response.class);
+            Collection<Producttb> product = res.readEntity(productgeneric);
+            return product;
+    }
+    
+    public String add(){
+        productclient.addProduct(name, price, bid, cid);
+        this.producttb = new Producttb();
+        return "display";
+    }
+    
+    public void delete(Producttb p){
+        this.pid = p.getPid().toString();
+        Categorytb c = p.getCid();
+        this.cid = c.getCid().toString();
+        Brandtb b = p.getBid();
+        this.bid = b.getBid().toString();
+        productclient.removeProduct(pid, bid, cid);
+    }
+    
+    public String edit(Producttb p){
+        this.pid = p.getPid().toString();
+        Categorytb c = p.getCid();
+        this.cid = c.getCid().toString();
+        Brandtb b = p.getBid();
+        this.bid = b.getBid().toString();
+        this.name = p.getPname();
+        //this.price = p.getPrice();
+        return "edit";
+    }
+    
+    public String edit(){
+        productclient.updateProduct(pid, name, price, bid, cid);
+        this.producttb = new Producttb();
+        return "display";
+    }
+
+}
+
+------------------------------
+Client(PAckage)ProductClient(Restful Java Client)
+------------------------------
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package client;
+
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+
+/**
+ * Jersey REST client generated for REST resource:ProductgenericResource
+ * [productgeneric]<br>
+ * USAGE:
+ * <pre>
+ *        ProductClient client = new ProductClient();
+ *        Object response = client.XXX(...);
+ *        // do whatever with response
+ *        client.close();
+ * </pre>
+ *
+ * @author De
+ */
+public class ProductClient {
+
+    private WebTarget webTarget;
+    private Client client;
+    private static final String BASE_URI = "http://localhost:8080/ProductData/webresources";
+
+    public ProductClient() {
+        client = javax.ws.rs.client.ClientBuilder.newClient();
+        webTarget = client.target(BASE_URI).path("productgeneric");
+    }
+
+    public <T> T getAllProducts(Class<T> responseType) throws ClientErrorException {
+        WebTarget resource = webTarget;
+        return resource.request(javax.ws.rs.core.MediaType.APPLICATION_XML).get(responseType);
+    }
+
+    public <T> T getAllBrand(Class<T> responseType) throws ClientErrorException {
+        WebTarget resource = webTarget;
+        resource = resource.path("getAllBrand");
+        return resource.request(javax.ws.rs.core.MediaType.APPLICATION_XML).get(responseType);
+    }
+
+    public void removeProduct(String pid, String bid, String cid) throws ClientErrorException {
+        webTarget.path(java.text.MessageFormat.format("removeProduct/{0}/{1}/{2}", new Object[]{pid, bid, cid})).request().delete();
+    }
+
+    public void addProduct(String name, String price, String bid, String cid) throws ClientErrorException {
+        webTarget.path(java.text.MessageFormat.format("addProduct/{0}/{1}/{2}/{3}", new Object[]{name, price, bid, cid})).request().post(null);
+    }
+
+    public void updateProduct(String pid, String name, String price, String bid, String cid) throws ClientErrorException {
+        webTarget.path(java.text.MessageFormat.format("updateProduct/{0}/{1}/{2}/{3}/{4}", new Object[]{pid, name, price, bid, cid})).request().put(Entity.json(""));
+    }
+
+    public <T> T getProductByName(Class<T> responseType, String name) throws ClientErrorException {
+        WebTarget resource = webTarget;
+        resource = resource.path(java.text.MessageFormat.format("getProductByName/{0}", new Object[]{name}));
+        return resource.request(javax.ws.rs.core.MediaType.APPLICATION_XML).get(responseType);
+    }
+
+    public <T> T getAllCategory(Class<T> responseType) throws ClientErrorException {
+        WebTarget resource = webTarget;
+        resource = resource.path("getAllCategory");
+        return resource.request(javax.ws.rs.core.MediaType.APPLICATION_XML).get(responseType);
+    }
+
+    public void close() {
+        client.close();
+    }
+    
+}
+------------------------------
+ejb(Package)DataBeanLocal.java
+------------------------------
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package ejb;
+
+import entity.Brandtb;
+import entity.Categorytb;
+import entity.Producttb;
+import java.util.Collection;
+import javax.ejb.Local;
+
+/**
+ *
+ * @author De
+ */
+@Local
+public interface DataBeanLocal {
+    
+    Collection<Categorytb> getAllCategory();
+    Collection<Brandtb> getAllBrand();
+        Collection<Producttb> getAllProducts();
+        void addProduct(String name,int price,int bid,int cid);
+        void updateProduct(int pid,String name,int price,int bid,int cid);
+        void removeProduct(int pid,int bid,int cid);
+        Collection<Producttb> getProductByName(String name);
+}
+
+
+------------------------------
+ejb(Package)DataBean.java
+------------------------------
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package ejb;
+
+import entity.Brandtb;
+import entity.Categorytb;
+import entity.Producttb;
+import java.util.Collection;
+import javax.ejb.Stateless;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+/**
+ *
+ * @author De
+ */
+@Stateless
+public class DataBean implements DataBeanLocal {
+   @PersistenceContext(unitName="ProductDataPU")
+    EntityManager em;
+    
+    @Override
+    public Collection<Producttb> getAllProducts() {
+        return em.createNamedQuery("Producttb.findAll").getResultList();
+    }
+
+    @Override
+    public void addProduct(String name, int price, int bid, int cid) {
+        Brandtb b = em.find(Brandtb.class, bid);
+        Categorytb c = em.find(Categorytb.class, cid);
+        Producttb p = new Producttb();
+        
+        p.setPname(name);
+        p.setPrice(price);
+        p.setBid(b);
+        p.setCid(c);
+        
+        em.persist(p);
+        
+        Collection<Producttb> brand = b.getProducttbCollection();
+        Collection<Producttb> category = c.getProducttbCollection();
+        
+        brand.add(p);
+        b.setProducttbCollection(brand);
+        em.merge(b);
+        
+        category.add(p);
+        c.setProducttbCollection(category);
+        em.merge(c);
+        
+    }
+
+    @Override
+    public void updateProduct(int pid, String name, int price, int bid, int cid) {
+        Brandtb b = em.find(Brandtb.class, bid);
+        Categorytb c = em.find(Categorytb.class, cid);
+        Producttb p = em.find(Producttb.class,pid);
+        
+        p.setBid(b);
+        p.setCid(c);
+        p.setPname(name);
+        p.setPrice(price);
+        
+        em.merge(p);
+    }
+
+    @Override
+    public void removeProduct(int pid, int bid, int cid) {
+        Brandtb b = em.find(Brandtb.class, bid);
+        Categorytb c = em.find(Categorytb.class, cid);
+        Producttb p = em.find(Producttb.class,pid);
+        
+        Collection<Producttb> brand = b.getProducttbCollection();
+        Collection<Producttb> category = c.getProducttbCollection();
+        
+        if(brand.contains(p)){
+            brand.remove(p);
+            b.setProducttbCollection(brand);
+            category.remove(p);
+            c.setProducttbCollection(category);
+            em.merge(b);
+            em.merge(c);
+            em.remove(p);
+        }
+    }
+
+    @Override
+    public Collection<Producttb> getProductByName(String name) {
+        Collection<Producttb> products = em.createNamedQuery("Producttb.findByPname").setParameter("pname",name).
+                getResultList();
+        return products;
+    }
+
+    @Override
+    public Collection<Categorytb> getAllCategory() {
+        return em.createNamedQuery("Categorytb.findAll").getResultList();
+    }
+
+    @Override
+    public Collection<Brandtb> getAllBrand() {
+        return em.createNamedQuery("Brandtb.findAll").getResultList();
+    }
+
+}
+
+
